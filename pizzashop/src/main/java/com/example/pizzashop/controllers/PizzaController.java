@@ -266,4 +266,14 @@ public class PizzaController {
                 .totalPages(totalPages)
                 .build());
     }
+
+    @GetMapping("/count-sold/{id}")
+    public ResponseEntity<?> getCountSoldByPizzaId(@PathVariable("id") Long pizzaId){
+        try {
+            Integer countSold =  pizzaService.getCountSoldByPizzaId(pizzaId);
+            return ResponseEntity.ok(countSold);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

@@ -24,4 +24,5 @@ public interface IPizzaService {
     List<Pizza> findPizzasByIds(List<Long> pizzaIds );
     Page<PizzaResponse> bestSellPizzas(PageRequest pageRequest);
     Page<PizzaResponse> worstSellPizzas(PageRequest pageRequest);
+    Integer getCountSoldByPizzaId(long pizzaId);
 }

@@ -125,7 +125,7 @@ public class OrderService implements IOrderService{
     public Order updateOrder(long id, OrderDTO orderDTO) throws Exception {
         Order order = orderRepository.findById(id).orElseThrow(()->
                 new DataNotFoundException("Cannot find order with id: "+id));
-        User exsistingUser = userRepository.findById(orderDTO.getUserId()).orElse(null);
+//        User exsistingUser = userRepository.findById(orderDTO.getUserId()).orElse(null);
 //        modelMapper.typeMap(OrderDTO.class,Order.class)
 //                .addMappings(mapper->mapper.skip(Order::setId));
 //        modelMapper.map(orderDTO,order);
@@ -136,22 +136,15 @@ public class OrderService implements IOrderService{
         order.setDeliveryAddress(orderDTO.getDeliveryAddress());
         order.setDeliveryPhone(orderDTO.getDeliveryPhone());
         order.setStatus(orderDTO.getStatus());
-        order.setOrderTime(orderDTO.getOrderTime());
         order.setTable(orderDTO.getTable());
         order.setNote(orderDTO.getNote());
         order.setShippingTime(orderDTO.getShippingTime());
         order.setPaymentMethod(orderDTO.getPaymentMethod());
         order.setEmail(orderDTO.getEmail());
 
-        if(exsistingUser != null && exsistingUser.getRole().getId() == 2){
-            order.setPhoneOrder(exsistingUser.getPhone());
-        }else{
-            order.setPhoneOrder(order.getPhoneOrder());
-        }
 
-        order.setUser(exsistingUser);
         orderRepository.save(order);
-        Membership existingMembership = membershipRepository.getMembershipByPhone(exsistingUser.getPhone()).orElse(null);
+        Membership existingMembership = membershipRepository.getMembershipByPhone(order.getPhoneOrder()).orElse(null);
         if(existingMembership != null){
             if(Order.STATUS_COMPLETED.equals(order.getStatus())){
                 Float newTotalSpent = orderRepository.sumTotalAmount(
@@ -159,7 +152,7 @@ public class OrderService implements IOrderService{
                 String newTier = getTierByTotalSpent(newTotalSpent);
                 Float newDiscount = getDiscountByTier(newTier);
                 MembershipDTO membershipDTO = MembershipDTO.builder()
-                        .phone(exsistingUser.getPhone())
+                        .phone(order.getPhoneOrder())
                         .totalSpent(newTotalSpent)
                         .membershipTier(newTier)
                         .discountRate(newDiscount)
@@ -176,6 +169,7 @@ public class OrderService implements IOrderService{
         Order order = orderRepository.findById(id).orElse(null);
         //khong xoa cung => xoa mem
         if(order !=null){
+            order.setStatus(Order.STATUS_CANCELLED);
             order.setActive(false);
             orderRepository.save(order);
         }
@@ -195,6 +189,12 @@ public class OrderService implements IOrderService{
     public Order updateTierInMembership(String phone) {
         return null;
     }
+
+    @Override
+    public List<Order> getUserOrderCanceled(Long userId) {
+        return orderRepository.getUserOrderCanceled(userId);
+    }
+
 
     public static Float getDiscountByPriceOrder(Float price) {
         if (price == null || price < Order.VALUE_1000000) {

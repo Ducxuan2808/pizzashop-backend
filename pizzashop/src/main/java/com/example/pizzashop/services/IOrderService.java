@@ -19,4 +19,5 @@ public interface IOrderService {
     Page<Order> getOrdersByKeyword(String keyword, Pageable pageable);
 
     Order updateTierInMembership(String phone);
+    List<Order> getUserOrderCanceled(Long userId);
 }

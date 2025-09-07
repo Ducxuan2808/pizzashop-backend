@@ -101,4 +101,14 @@ public class ReviewController {
         }
     }
 
+    @GetMapping("/count-review/{id}")
+    public ResponseEntity<?> getCountReviewByPizzaId(@PathVariable("id") Long pizzaId){
+        try {
+            Integer countReview =  reviewService.getCountReviewByPizzaId(pizzaId);
+            return ResponseEntity.ok(countReview);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

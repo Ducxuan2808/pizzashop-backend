@@ -72,4 +72,6 @@ public interface PizzaRepository extends JpaRepository<Pizza,Long> {
     List<Pizza> revenueStatistics(
             @Param("keyword") String keyword, Pageable pageable);
 
+
+
 }

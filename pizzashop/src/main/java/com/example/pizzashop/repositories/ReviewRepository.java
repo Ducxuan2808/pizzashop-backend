@@ -24,4 +24,7 @@ public interface ReviewRepository extends JpaRepository<Review,Long> {
     Optional<Review> getByOrderDetailId(@Param("orderDetailId") Long orderDetailId);
 
     boolean existsByOrderDetail(OrderDetail orderDetailId);
+
+    @Query("SELECT COUNT(*) FROM Review r WHERE r.pizza.id = :pizzaId")
+    Integer getCountReviewByPizzaId(@Param("pizzaId") Long pizzaId);
 }

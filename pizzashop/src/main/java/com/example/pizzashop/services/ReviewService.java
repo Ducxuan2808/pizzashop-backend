@@ -87,4 +87,9 @@ public class ReviewService implements IReviewService{
         OrderDetail orderDetail = orderDetailRepository.findById(orderDetailId).orElseThrow(null);
         return reviewRepository.existsByOrderDetail(orderDetail);
     }
+
+    @Override
+    public Integer getCountReviewByPizzaId(long pizzaId) {
+        return reviewRepository.getCountReviewByPizzaId(pizzaId);
+    }
 }

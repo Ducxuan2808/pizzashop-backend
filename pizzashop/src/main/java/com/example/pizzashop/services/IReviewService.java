@@ -17,5 +17,6 @@ public interface IReviewService {
     List<Review> getByOrderId(Long id) throws Exception;
     Review getByOrderDetailId(Long orderDetailId);
     boolean existByOrderDetailId(Long orderDetailId);
+    Integer getCountReviewByPizzaId(long pizzaId);
 
 }

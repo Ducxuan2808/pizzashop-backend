@@ -47,8 +47,20 @@ public class OrderController {
         }
     }
 
-    @GetMapping("/user/{user_id}")
+    @GetMapping("/user/order-cancelled/{user_id}")
     public ResponseEntity<?> getOrders(
+            @Valid @PathVariable("user_id") Long userId){
+        try{
+            List<Order> orders = orderService.getUserOrderCanceled(userId);
+            return ResponseEntity.ok(orders);
+
+        }catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/user/{user_id}")
+    public ResponseEntity<?> getOrdersByKeyword(
             @Valid @PathVariable("user_id") Long userId){
         try{
             List<Order> orders = orderService.findByUserId(userId);
@@ -58,6 +70,8 @@ public class OrderController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getOrder(

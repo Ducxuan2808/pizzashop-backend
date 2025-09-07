@@ -6,6 +6,7 @@ import com.example.pizzashop.exceptions.DataNotFoundException;
 import com.example.pizzashop.exceptions.InvalidParamException;
 import com.example.pizzashop.models.Pizza;
 import com.example.pizzashop.models.PizzaImage;
+import com.example.pizzashop.repositories.OrderDetailRepository;
 import com.example.pizzashop.repositories.PizzaImageRepository;
 import com.example.pizzashop.repositories.PizzaRepository;
 import com.example.pizzashop.responses.PizzaResponse;
@@ -25,6 +26,7 @@ public class PizzaService implements IPizzaService{
     private final PizzaRepository pizzaRepository;
 
     private final PizzaImageRepository pizzaImageRepository;
+    private final OrderDetailRepository orderDetailRepository;
     @Override
     @Transactional
     public Pizza createPizza(PizzaDTO pizzaDTO) throws Exception {
@@ -119,5 +121,10 @@ public class PizzaService implements IPizzaService{
         Page<Pizza> productsPage;
         productsPage = pizzaRepository.worstSellPizzas(pageRequest);
         return productsPage.map(PizzaResponse::fromPizza);
+    }
+
+    @Override
+    public Integer getCountSoldByPizzaId(long pizzaId) {
+        return orderDetailRepository.getCountSoldByPizzaId(pizzaId);
     }
 }

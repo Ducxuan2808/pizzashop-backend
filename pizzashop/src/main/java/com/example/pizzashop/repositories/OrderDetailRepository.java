@@ -13,5 +13,8 @@ import java.util.List;
 public interface OrderDetailRepository extends JpaRepository<OrderDetail,Long> {
     List<OrderDetail> findByOrderId(Long orderId);
 
+    @Query("SELECT SUM(o.quantity) FROM OrderDetail o WHERE o.pizza.id = :pizzaId")
+    Integer getCountSoldByPizzaId(@Param("pizzaId") Long pizzaId);
+
 
 }

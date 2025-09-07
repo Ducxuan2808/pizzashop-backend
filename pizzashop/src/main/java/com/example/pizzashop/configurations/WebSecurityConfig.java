@@ -110,6 +110,8 @@ public class WebSecurityConfig {
                                     String.format("%s/membership**", apiPrefix)).permitAll()
                             .requestMatchers(GET,
                                     String.format("%s/membership/**", apiPrefix)).permitAll()
+                            .requestMatchers(GET,
+                                    String.format("%s/membership/phone/**", apiPrefix)).permitAll()
                             .requestMatchers(POST,
                                     String.format("%s/membership**",apiPrefix)).hasAnyRole(Role.ADMIN)
                             .requestMatchers(POST,

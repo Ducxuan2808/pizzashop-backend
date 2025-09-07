@@ -16,13 +16,13 @@ public interface OrderRepository extends JpaRepository<Order,Long> {
 
     @Query("""
     SELECT o FROM Order o
-    WHERE o.active = true AND (
+    WHERE 
         :keyword IS NULL OR TRIM(:keyword) = '' OR
         LOWER(o.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
         LOWER(o.deliveryAddress) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
         LOWER(o.note) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
         LOWER(o.deliveryPhone) LIKE LOWER(CONCAT('%', :keyword, '%'))
-    )
+    
 """)
     Page<Order> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
@@ -30,9 +30,12 @@ public interface OrderRepository extends JpaRepository<Order,Long> {
     SELECT SUM(o.totalPrice)
     FROM Order o
     JOIN o.user u
-    WHERE (o.phoneOrder IS NOT NULL AND o.phoneOrder = :phone)
-       OR (o.phoneOrder IS NULL AND u.phone = :phone)
+    WHERE (o.phoneOrder = :phone)
       AND o.status = 'Completed' AND o.active = true
 """)
     Float sumTotalAmount(@Param("phone") String phone);
+
+    @Query("SELECT o FROM Order o " +
+            "WHERE o.active = false AND o.user.id = :userId")
+    List<Order> getUserOrderCanceled(Long userId);
 }
