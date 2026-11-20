@@ -13,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@EntityListeners(PizzaListener.class)
 public class Pizza extends  BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

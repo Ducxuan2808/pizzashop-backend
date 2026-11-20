@@ -1,13 +1,16 @@
 package com.example.pizzashop.controllers;
 
 import com.example.pizzashop.components.LocalizationUtils;
+import com.example.pizzashop.converter.PizzaMessageConverter;
 import com.example.pizzashop.dtos.PizzaDTO;
 import com.example.pizzashop.dtos.PizzaImageDTO;
 import com.example.pizzashop.models.Pizza;
 import com.example.pizzashop.models.PizzaImage;
 import com.example.pizzashop.responses.PizzaListResponse;
 import com.example.pizzashop.responses.PizzaResponse;
+import com.example.pizzashop.services.IPizzaRedisService;
 import com.example.pizzashop.services.IPizzaService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.converter.MessagingMessageConverter;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -39,6 +44,8 @@ import java.util.stream.Collectors;
 public class PizzaController {
     private final IPizzaService pizzaService;
     private final LocalizationUtils localizationUtils;
+    private final IPizzaRedisService pizzaRedisService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @PostMapping( "")
     public ResponseEntity<?> createProduct(
@@ -56,6 +63,8 @@ public class PizzaController {
                     return ResponseEntity.badRequest().body(errorMessages);
                 }
                 Pizza newProduct =  pizzaService.createPizza(pizzaDTO);
+                this.kafkaTemplate.send("insert-a-pizza", newProduct);
+                this.kafkaTemplate.setMessageConverter(new PizzaMessageConverter());
                 return ResponseEntity.ok(newProduct);
             }
             else {
@@ -64,6 +73,7 @@ public class PizzaController {
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+
 
     }
 
@@ -75,15 +85,29 @@ public class PizzaController {
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int limit
-    ){
+    ) throws Exception {
+        int totalPages = 0;
         PageRequest pageRequest = PageRequest.of(page,limit, Sort.by("id").ascending());
-        Page<PizzaResponse> pizzaPage = pizzaService.getAllPizzas(sortBy, minPrice, maxPrice, keyword, pageRequest);
-        //lay tong so trang
-        int totalPages = pizzaPage.getTotalPages();
-        List<PizzaResponse> pizzas =  pizzaPage.getContent();
+        List<PizzaResponse> pizzaResponses = pizzaRedisService.getPizzas(sortBy, minPrice,maxPrice,keyword,pageRequest);
+        if(pizzaResponses == null){
+            Page<PizzaResponse> pizzaPage = pizzaService.getAllPizzas(sortBy, minPrice, maxPrice, keyword, pageRequest);
+            //lay tong so trang
+            totalPages = pizzaPage.getTotalPages();
+            pizzaResponses =  pizzaPage.getContent();
+            pizzaRedisService.saveAllListPizza(
+                    pizzaResponses,
+                    sortBy,
+                    minPrice,
+                    maxPrice,
+                    keyword,
+                    pageRequest
+            );
+        }
+        this.kafkaTemplate.send("get-all-pizzas", pizzaResponses);
+
         return ResponseEntity.ok(PizzaListResponse
                 .builder()
-                .pizzas(pizzas)
+                .pizzas(pizzaResponses)
                 .totalPages(totalPages)
                 .build());
     }

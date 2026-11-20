@@ -20,8 +20,7 @@ public class PizzaRedisService implements IPizzaRedisService{
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper redisObjectMapper;
-    @Value("${spring.data.redis.use-redis-cache}")
-    private boolean useRedisCache;
+
     private String getKeyFrom(String sortBy,
                               Float minPrice,
                               Float maxPrice,
@@ -32,8 +31,14 @@ public class PizzaRedisService implements IPizzaRedisService{
         Sort sort = pageRequest.getSort();
         String sortDirection = sort.getOrderFor("id")
                 .getDirection() == Sort.Direction.ASC ? "asc": "desc";
-        String key = String.format("all_products:%s:%d:%d:%s:%d:%d:%s",
-                sortBy, minPrice, maxPrice, keyword, pageNumber, pageSize, sortDirection);
+        String key = String.format("all_products:%s:%s:%s:%s:%d:%d:%s",
+                sortBy != null ? sortBy : "",
+                minPrice != null ? minPrice : 0,
+                maxPrice != null ? maxPrice : 0,
+                keyword != null ? keyword : "",
+                pageNumber,
+                pageSize,
+                sortDirection);
         return key;
     }
     @Override
@@ -43,9 +48,6 @@ public class PizzaRedisService implements IPizzaRedisService{
 
     @Override
     public List<PizzaResponse> getPizzas(String sortBy, Float minPrice, Float maxPrice, String keyword, PageRequest pageRequest) throws JsonProcessingException {
-        if(useRedisCache == false) {
-            return null;
-        }
         String key = this.getKeyFrom(sortBy, minPrice, maxPrice, keyword, pageRequest);
         String json = (String) redisTemplate.opsForValue().get(key);
         List<PizzaResponse> pizzaResponses =
