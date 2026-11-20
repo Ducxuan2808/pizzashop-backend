@@ -4,6 +4,9 @@ import com.example.pizzashop.dtos.PizzaDTO;
 import com.example.pizzashop.dtos.PizzaImageDTO;
 import com.example.pizzashop.exceptions.DataNotFoundException;
 import com.example.pizzashop.exceptions.InvalidParamException;
+import com.example.pizzashop.kafka.KafkaEventPublisher;
+import com.example.pizzashop.kafka.KafkaTopics;
+import com.example.pizzashop.kafka.events.PizzaEvent;
 import com.example.pizzashop.models.Pizza;
 import com.example.pizzashop.models.PizzaImage;
 import com.example.pizzashop.repositories.OrderDetailRepository;
@@ -27,6 +30,7 @@ public class PizzaService implements IPizzaService{
 
     private final PizzaImageRepository pizzaImageRepository;
     private final OrderDetailRepository orderDetailRepository;
+    private final KafkaEventPublisher kafkaEventPublisher;
     @Override
     @Transactional
     public Pizza createPizza(PizzaDTO pizzaDTO) throws Exception {
@@ -38,7 +42,10 @@ public class PizzaService implements IPizzaService{
                 .description(pizzaDTO.getDescription())
                 .active(true)
                 .build();
-        return pizzaRepository.save(newPizza);
+        Pizza savedPizza = pizzaRepository.save(newPizza);
+        kafkaEventPublisher.publish(KafkaTopics.PIZZA_EVENTS, savedPizza.getId(),
+                PizzaEvent.of(PizzaEvent.CREATED, savedPizza));
+        return savedPizza;
     }
 
     @Override
@@ -67,7 +74,10 @@ public class PizzaService implements IPizzaService{
             existingPizza.setBasePrice(pizzaDTO.getBasePrice());
             existingPizza.setDescription(pizzaDTO.getDescription());
             existingPizza.setThumbnail(pizzaDTO.getThumbnail());
-            return pizzaRepository.save(existingPizza);
+            Pizza savedPizza = pizzaRepository.save(existingPizza);
+            kafkaEventPublisher.publish(KafkaTopics.PIZZA_EVENTS, savedPizza.getId(),
+                    PizzaEvent.of(PizzaEvent.UPDATED, savedPizza));
+            return savedPizza;
         }
         return null;
     }
@@ -78,6 +88,8 @@ public class PizzaService implements IPizzaService{
         if(existingPizza!=null){
            existingPizza.setActive(false);
            pizzaRepository.save(existingPizza);
+           kafkaEventPublisher.publish(KafkaTopics.PIZZA_EVENTS, existingPizza.getId(),
+                   PizzaEvent.of(PizzaEvent.DELETED, existingPizza));
         }
     }
 

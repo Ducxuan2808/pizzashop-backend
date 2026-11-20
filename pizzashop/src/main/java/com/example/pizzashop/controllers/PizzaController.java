@@ -1,7 +1,6 @@
 package com.example.pizzashop.controllers;
 
 import com.example.pizzashop.components.LocalizationUtils;
-import com.example.pizzashop.converter.PizzaMessageConverter;
 import com.example.pizzashop.dtos.PizzaDTO;
 import com.example.pizzashop.dtos.PizzaImageDTO;
 import com.example.pizzashop.models.Pizza;
@@ -21,8 +20,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.converter.MessagingMessageConverter;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -45,7 +42,6 @@ public class PizzaController {
     private final IPizzaService pizzaService;
     private final LocalizationUtils localizationUtils;
     private final IPizzaRedisService pizzaRedisService;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @PostMapping( "")
     public ResponseEntity<?> createProduct(
@@ -63,8 +59,6 @@ public class PizzaController {
                     return ResponseEntity.badRequest().body(errorMessages);
                 }
                 Pizza newProduct =  pizzaService.createPizza(pizzaDTO);
-                this.kafkaTemplate.send("insert-a-pizza", newProduct);
-                this.kafkaTemplate.setMessageConverter(new PizzaMessageConverter());
                 return ResponseEntity.ok(newProduct);
             }
             else {
@@ -103,8 +97,6 @@ public class PizzaController {
                     pageRequest
             );
         }
-        this.kafkaTemplate.send("get-all-pizzas", pizzaResponses);
-
         return ResponseEntity.ok(PizzaListResponse
                 .builder()
                 .pizzas(pizzaResponses)

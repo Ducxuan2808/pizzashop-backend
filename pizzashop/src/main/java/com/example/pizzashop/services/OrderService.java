@@ -4,6 +4,9 @@ import com.example.pizzashop.dtos.CartItemDTO;
 import com.example.pizzashop.dtos.MembershipDTO;
 import com.example.pizzashop.dtos.OrderDTO;
 import com.example.pizzashop.exceptions.DataNotFoundException;
+import com.example.pizzashop.kafka.KafkaEventPublisher;
+import com.example.pizzashop.kafka.KafkaTopics;
+import com.example.pizzashop.kafka.events.OrderEvent;
 import com.example.pizzashop.models.*;
 import com.example.pizzashop.repositories.*;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +36,7 @@ public class OrderService implements IOrderService{
     private final BaseTypeRepository baseTypeRepository;
     private final MembershipRepository membershipRepository;
     private final MembershipService membershipService;
+    private final KafkaEventPublisher kafkaEventPublisher;
     @Override
     @Transactional
     public Order createOrder(OrderDTO orderDTO) throws Exception {
@@ -112,6 +116,8 @@ public class OrderService implements IOrderService{
         }
         //Luu vao CSDL
         orderDetailRepository.saveAll(orderDetails);
+        kafkaEventPublisher.publish(KafkaTopics.ORDER_EVENTS, order.getId(),
+                OrderEvent.of(OrderEvent.CREATED, order, null, orderDetails.size()));
         return order;
     }
 
@@ -125,6 +131,7 @@ public class OrderService implements IOrderService{
     public Order updateOrder(long id, OrderDTO orderDTO) throws Exception {
         Order order = orderRepository.findById(id).orElseThrow(()->
                 new DataNotFoundException("Cannot find order with id: "+id));
+        String previousStatus = order.getStatus();
 //        User exsistingUser = userRepository.findById(orderDTO.getUserId()).orElse(null);
 //        modelMapper.typeMap(OrderDTO.class,Order.class)
 //                .addMappings(mapper->mapper.skip(Order::setId));
@@ -161,6 +168,10 @@ public class OrderService implements IOrderService{
                 existingMembership.setTotalSpent(newTotalSpent);
             }
         }
+        boolean statusChanged = order.getStatus() != null && !order.getStatus().equals(previousStatus);
+        kafkaEventPublisher.publish(KafkaTopics.ORDER_EVENTS, order.getId(),
+                OrderEvent.of(statusChanged ? OrderEvent.STATUS_CHANGED : OrderEvent.UPDATED,
+                        order, previousStatus, null));
         return order;
     }
 
@@ -169,9 +180,12 @@ public class OrderService implements IOrderService{
         Order order = orderRepository.findById(id).orElse(null);
         //khong xoa cung => xoa mem
         if(order !=null){
+            String previousStatus = order.getStatus();
             order.setStatus(Order.STATUS_CANCELLED);
             order.setActive(false);
             orderRepository.save(order);
+            kafkaEventPublisher.publish(KafkaTopics.ORDER_EVENTS, order.getId(),
+                    OrderEvent.of(OrderEvent.CANCELLED, order, previousStatus, null));
         }
     }
 

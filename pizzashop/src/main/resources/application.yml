@@ -36,7 +36,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       #transaction-id-prefix: tx.
       properties:
-        "[spring.json.type.mapping]": pizza:com.example.pizzashop.models.Pizza
+        "[spring.json.type.mapping]": orderEvent:com.example.pizzashop.kafka.events.OrderEvent,userEvent:com.example.pizzashop.kafka.events.UserEvent,pizzaEvent:com.example.pizzashop.kafka.events.PizzaEvent,tableBookingEvent:com.example.pizzashop.kafka.events.TableBookingEvent
     consumer:
       value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
 form: http://localhost:4200

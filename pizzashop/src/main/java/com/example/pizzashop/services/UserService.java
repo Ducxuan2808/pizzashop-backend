@@ -6,6 +6,9 @@ import com.example.pizzashop.dtos.ForgotPasswordDTO;
 import com.example.pizzashop.dtos.UpdateUserDTO;
 import com.example.pizzashop.dtos.UserDTO;
 import com.example.pizzashop.exceptions.DataNotFoundException;
+import com.example.pizzashop.kafka.KafkaEventPublisher;
+import com.example.pizzashop.kafka.KafkaTopics;
+import com.example.pizzashop.kafka.events.UserEvent;
 import com.example.pizzashop.exceptions.PermissionDenyException;
 import com.example.pizzashop.models.Membership;
 import com.example.pizzashop.models.Pizza;
@@ -39,6 +42,7 @@ public class UserService implements IUserService{
     private final JwtTokenUtils jwtTokenUtil;
     private final AuthenticationManager authenticationManager;
     private  final LocalizationUtils localizationUtils;
+    private final KafkaEventPublisher kafkaEventPublisher;
     @Override
     @Transactional
     public User createUser(UserDTO userDTO) throws Exception {
@@ -80,6 +84,8 @@ public class UserService implements IUserService{
                     .build();
             membershipRepository.save(newMembership);
         }
+        kafkaEventPublisher.publish(KafkaTopics.USER_EVENTS, newUser.getId(),
+                UserEvent.of(UserEvent.REGISTERED, newUser));
         return newUser;
     }
 
@@ -175,7 +181,10 @@ public class UserService implements IUserService{
             existingUser.setRole(role);
         }
 
-        return userRepository.save(existingUser);
+        User savedUser = userRepository.save(existingUser);
+        kafkaEventPublisher.publish(KafkaTopics.USER_EVENTS, savedUser.getId(),
+                UserEvent.of(UserEvent.UPDATED, savedUser));
+        return savedUser;
     }
 
     @Override
@@ -191,6 +200,8 @@ public class UserService implements IUserService{
         if(existingUser!=null){
             existingUser.setActive(false);
             userRepository.save(existingUser);
+            kafkaEventPublisher.publish(KafkaTopics.USER_EVENTS, existingUser.getId(),
+                    UserEvent.of(UserEvent.DEACTIVATED, existingUser));
         }
     }
 
@@ -216,6 +227,9 @@ public class UserService implements IUserService{
             String encodedPassword = passwordEncoder.encode(newPassword);
             existingUser.setPassword(encodedPassword);
         }
-        return userRepository.save(existingUser);
+        User savedUser = userRepository.save(existingUser);
+        kafkaEventPublisher.publish(KafkaTopics.USER_EVENTS, savedUser.getId(),
+                UserEvent.of(UserEvent.PASSWORD_RESET, savedUser));
+        return savedUser;
     }
 }

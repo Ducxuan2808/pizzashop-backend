@@ -32518,3 +32518,5 @@ Security filter chain: [
 2026-09-26 19:08:48.685 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
 2026-09-26 19:08:48.688 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
 2026-09-26 19:08:48.716 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2026-11-20 20:40:04.378 [main] ERROR c.e.p.kafka.KafkaEventPublisher - Không th? g?i event t?i topic pizzashop.pizza-events: broker down
+2026-11-20 20:40:04.390 [main] ERROR c.e.p.kafka.KafkaEventPublisher - G?i event t?i topic pizzashop.pizza-events th?t b?i (key=1): timeout

@@ -18,11 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import com.example.pizzashop.kafka.KafkaEventPublisher;
+import com.example.pizzashop.kafka.KafkaTopics;
+import com.example.pizzashop.kafka.events.TableBookingEvent;
+
 @Service
 @RequiredArgsConstructor
 public class TableBookingService implements ITableBookingService {
     private final TableBookingRepository tableBookingRepository;
     private final UserRepository userRepository;
+    private final KafkaEventPublisher kafkaEventPublisher;
     @Override
     @Transactional
     public TableBooking createBooking(TableBookingDTO tableBookingDTO) throws Exception{
@@ -39,7 +44,10 @@ public class TableBookingService implements ITableBookingService {
                 .note(tableBookingDTO.getNote())
                 .active(true)
                 .build();
-        return tableBookingRepository.save(tableBooking);
+        TableBooking saved = tableBookingRepository.save(tableBooking);
+        kafkaEventPublisher.publish(KafkaTopics.TABLE_BOOKING_EVENTS, saved.getId(),
+                TableBookingEvent.of(TableBookingEvent.CREATED, saved));
+        return saved;
     }
 
     @Override
@@ -59,7 +67,10 @@ public class TableBookingService implements ITableBookingService {
             existBooking.setStatus(tableBookingDTO.getStatus());
             existBooking.setName(tableBookingDTO.getNote());
             existBooking.setActive(tableBookingDTO.getActive());
-            return tableBookingRepository.save(existBooking);
+            TableBooking saved = tableBookingRepository.save(existBooking);
+            kafkaEventPublisher.publish(KafkaTopics.TABLE_BOOKING_EVENTS, saved.getId(),
+                    TableBookingEvent.of(TableBookingEvent.UPDATED, saved));
+            return saved;
         }
         return null;
 
@@ -78,6 +89,8 @@ public class TableBookingService implements ITableBookingService {
         if(tableBooking !=null){
             tableBooking.setActive(false);
             tableBookingRepository.save(tableBooking);
+            kafkaEventPublisher.publish(KafkaTopics.TABLE_BOOKING_EVENTS, tableBooking.getId(),
+                    TableBookingEvent.of(TableBookingEvent.CANCELLED, tableBooking));
         }
     }
 }
